@@ -1,4 +1,4 @@
-# SMB Sentinel — MR CYBER
+# SMB Sentinel — MR CYBER HARSH SAINI
 
 A lightweight, friendly SMB misconfiguration scanner for home/small-office
 networks. Cross-platform GUI (Windows + Linux) built with Python + customtkinter.
