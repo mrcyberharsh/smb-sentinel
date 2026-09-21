@@ -34,14 +34,14 @@ You cannot cross-compile a Windows .exe from Linux with PyInstaller — build
 each platform's binary on that platform (or use a CI runner, e.g. GitHub
 Actions with both `windows-latest` and `ubuntu-latest` jobs).
 
-## Free vs Premium
+## Free 
 
-| Feature | Free | Premium |
+| Feature | Free | 
 |---|---|---|
 | Network scan | Up to 14 devices | Unlimited range |
-| SMBv1 / signing check | ✅ | ✅ |
-| CVE matching + severity | 🔒 | ✅ |
-| Deep null-session/guest check | 🔒 | ✅ |
-| PDF / CSV export | 🔒 | ✅ |
+| SMBv1 / signing check | 
+| CVE matching + severity | 
+| Deep null-session/guest check |
+| PDF / CSV export | 
 | Scan history & trends |
-## COPYRIGHT BY MR CYBER HARSH 
+## COPYRIGHT BY MR CYBER PULSE
