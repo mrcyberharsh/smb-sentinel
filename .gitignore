@@ -1,0 +1,7 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.log
+smb_sentinel_private_key.pem
+smb_sentinel_public_key.txt

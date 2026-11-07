@@ -3,17 +3,18 @@ SMB Sentinel - MR CYBER
 A friendly SMB misconfiguration scanner for your local network.
 
 Free tier: small-range scan, SMBv1 + signing checks, color-coded results.
-Premium tier (manual unlock): unlimited range, CVE matching, deep null-session
-check, PDF/CSV export, scan history trends.
+Premium tier (manual unlock): extended private-network inventory, PDF/CSV export, and local scan history.
 """
 
 import threading
 import customtkinter as ctk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 import webbrowser
 
 import scanner
 import license_manager
+import history
+import reports
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("dark-blue")
@@ -116,7 +117,7 @@ class SMBSentinelApp(ctk.CTk):
         row2.pack(fill="x", padx=14, pady=(0, 12))
         limit_note = f"Free version scans up to {FREE_MAX_HOSTS} devices per scan."
         if self.is_premium:
-            limit_note = "Premium: unlimited range scanning enabled."
+            limit_note = "Premium: up to 254 hosts on a private /24 network."
         self.limit_label = ctk.CTkLabel(row2, text=limit_note, text_color="#999999", font=ctk.CTkFont(size=11))
         self.limit_label.pack(side="left")
 
@@ -162,10 +163,9 @@ class SMBSentinelApp(ctk.CTk):
         frame.pack(fill="x", padx=16, pady=(0, 14))
 
         premium_features = [
-            ("🔒 CVE Match & Severity", self._premium_gate),
-            ("🔒 Export PDF / CSV Report", self._premium_gate),
-            ("🔒 Deep Null-Session Check", self._premium_gate),
-            ("🔒 Scan History / Trends", self._premium_gate),
+            ("🔒 Export PDF", self._export_pdf),
+            ("🔒 Export CSV", self._export_csv),
+            ("🔒 Scan History / Trends", self._show_history),
         ]
         for label, cmd in premium_features:
             active = self.is_premium
@@ -214,6 +214,9 @@ class SMBSentinelApp(ctk.CTk):
                 "Upgrade to Premium for unlimited range scanning."
             )
 
+        if not messagebox.askyesno("Authorization required", "Confirm that this is a private network you own or are explicitly authorized to assess."):
+            return
+
         self.tree.delete(*self.tree.get_children())
         self.scan_btn.configure(state="disabled", text="Scanning...")
         self.progress_bar.set(0)
@@ -228,13 +231,23 @@ class SMBSentinelApp(ctk.CTk):
             self.after(0, lambda: self.progress_bar.set(pct))
             self.after(0, lambda: self.status_label.configure(text=f"Scanning {current_ip}... ({done}/{total})"))
 
-        results = scanner.scan_range(ip_list, progress_callback=progress_cb)
-        self.scan_results = results
-        self.after(0, self._display_results)
+        try:
+            results = scanner.scan_range(ip_list, progress_callback=progress_cb)
+            self.scan_results = results
+            self.history_summary = history.save_snapshot(results)
+            self.after(0, self._display_results)
+        except Exception as exc:
+            self.after(0, lambda: self._scan_failed(str(exc)))
+
+    def _scan_failed(self, error):
+        self.scan_btn.configure(state="normal", text="▶ Scan Network")
+        self.status_label.configure(text="Scan failed")
+        messagebox.showerror("Scan failed", error)
 
     def _display_results(self):
         self.scan_btn.configure(state="normal", text="▶ Scan Network")
-        self.status_label.configure(text=f"Scan complete — {len(self.scan_results)} hosts checked.")
+        summary = getattr(self, "history_summary", {})
+        self.status_label.configure(text=f"Scan complete — {len(self.scan_results)} hosts checked; history saved.")
 
         for ip, data in self.scan_results.items():
             risk = data.get("risk_level", "unknown")
@@ -254,6 +267,61 @@ class SMBSentinelApp(ctk.CTk):
             vals = list(self.tree.item(item, "values"))
             vals[0] = new_name
             self.tree.item(item, values=vals)
+
+    def _export_csv(self):
+        if not self.is_premium:
+            self._premium_gate()
+            return
+        if not self.scan_results:
+            messagebox.showinfo("No results", "Run a scan before exporting a report.")
+            return
+        path = filedialog.asksaveasfilename(
+            defaultextension=".csv", initialfile="smb-sentinel-report.csv",
+            filetypes=[("CSV files", "*.csv")],
+        )
+        if path:
+            with open(path, "w", encoding="utf-8", newline="") as handle:
+                handle.write(reports.export_csv(self.scan_results))
+            messagebox.showinfo("Export complete", f"CSV report saved to {path}")
+
+    def _export_pdf(self):
+        if not self.is_premium:
+            self._premium_gate()
+            return
+        if not self.scan_results:
+            messagebox.showinfo("No results", "Run a scan before exporting a report.")
+            return
+        path = filedialog.asksaveasfilename(
+            defaultextension=".pdf", initialfile="smb-sentinel-report.pdf",
+            filetypes=[("PDF files", "*.pdf")],
+        )
+        if path:
+            with open(path, "wb") as handle:
+                handle.write(reports.export_pdf(self.scan_results))
+            messagebox.showinfo("Export complete", f"PDF report saved to {path}")
+
+    def _show_history(self):
+        if not self.is_premium:
+            self._premium_gate()
+            return
+        snapshots = history.load_history()
+        if not snapshots:
+            messagebox.showinfo("Scan history", "No saved scan history yet.")
+            return
+        win = ctk.CTkToplevel(self)
+        win.title("SMB Sentinel — Scan History")
+        win.geometry("760x480")
+        text = ctk.CTkTextbox(win, wrap="word")
+        text.pack(fill="both", expand=True, padx=12, pady=12)
+        for index, item in enumerate(snapshots):
+            text.insert("end", (
+                f"Scan {index + 1} · {item.get('timestamp', 'unknown')}\n"
+                f"Hosts: {item.get('host_count', 0)} | High: {item.get('high_count', 0)} "
+                f"| Medium: {item.get('medium_count', 0)}\n"
+            ))
+            if index + 1 < len(snapshots):
+                text.insert("end", "—" * 55 + "\n")
+        text.configure(state="disabled")
 
     def _premium_gate(self):
         if self.is_premium:
@@ -282,7 +350,7 @@ class SMBSentinelApp(ctk.CTk):
         ).pack(pady=4)
 
         ctk.CTkLabel(win, text="Premium License Key", font=ctk.CTkFont(weight="bold")).pack(pady=(20, 4))
-        key_entry = ctk.CTkEntry(win, width=300, placeholder_text="MRCYBER-XXXXXXXX-XXXXXXXX")
+        key_entry = ctk.CTkEntry(win, width=300, placeholder_text="MRCYBER.<payload>.<signature>")
         key_entry.pack(pady=4)
         if self.is_premium:
             key_entry.insert(0, license_manager.load_saved_key())

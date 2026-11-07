@@ -278,8 +278,13 @@ def scan_range(ip_list, progress_callback=None, max_threads=30):
 
 
 def ips_in_cidr(cidr: str, limit: int = None):
+    """Return hosts only for a private IPv4 network no larger than /24."""
     net = ipaddress.ip_network(cidr, strict=False)
+    if not isinstance(net, ipaddress.IPv4Network) or not net.is_private:
+        raise ValueError("SMB Sentinel only scans private IPv4 networks.")
+    if net.num_addresses > 256:
+        raise ValueError("Network range is too large; choose a private /24 or smaller range.")
     hosts = list(net.hosts())
-    if limit:
-        hosts = hosts[:limit]
-    return [str(h) for h in hosts]
+    if limit is not None:
+        hosts = hosts[:max(0, int(limit))]
+    return [str(host) for host in hosts]
