@@ -1,0 +1,34 @@
+# SMB Sentinel
+
+> Read-only SMB misconfiguration scanner for private networks — SMBv1 detection, signing posture, and risk reporting.
+
+SMB Sentinel is a Python-based defensive tool for reviewing SMB configuration on authorized private networks. It performs read-only negotiation checks, flags SMBv1 and signing weaknesses, and exports reports. Ed25519 licensing with an offline verification model.
+
+## Quick Start
+
+- [README](https://github.com/mrcyberharsh/smb-sentinel/blob/main/README.md): Installation, GUI, scan checks
+- [Security Policy](https://github.com/mrcyberharsh/smb-sentinel/blob/main/SECURITY.md): Responsible disclosure and design invariants
+- [Code of Conduct](https://github.com/mrcyberharsh/smb-sentinel/blob/main/CODE_OF_CONDUCT.md): Community rules
+- [Support](https://github.com/mrcyberharsh/smb-sentinel/blob/main/SUPPORT.md): Getting help
+
+## Core Documentation
+
+- [Scan Checks](https://github.com/mrcyberharsh/smb-sentinel#what-smb-sentinel-checks): SMBv1, signing, dialect
+- [Scope](https://github.com/mrcyberharsh/smb-sentinel#scope): Private IPv4 only, max /24
+- [Licensing](https://github.com/mrcyberharsh/smb-sentinel#licensing): Ed25519 offline verification
+
+## Use Cases
+
+- Review SMBv1 exposure on a private /24 network
+- Detect signing-not-required misconfigurations
+- Generate risk reports for file-sharing services
+
+## Limitations
+
+- Read-only — no authentication, no writes, no exploitation
+- Private IPv4 ranges only, max /24
+- Findings are configuration indicators, not proof of exploitability
+
+## Optional
+
+- [License](https://github.com/mrcyberharsh/smb-sentinel/blob/main/LICENSE): See repository
