@@ -3,8 +3,7 @@ SMB Sentinel - MR CYBER
 A friendly SMB misconfiguration scanner for your local network.
 
 Free tier: small-range scan, SMBv1 + signing checks, color-coded results.
-Premium tier (manual unlock): unlimited range, CVE matching, deep null-session
-check, PDF/CSV export, scan history trends.
+Premium tier (manual unlock): extended private-network inventory, PDF/CSV export, and local scan history.
 """
 
 import threading
@@ -118,7 +117,7 @@ class SMBSentinelApp(ctk.CTk):
         row2.pack(fill="x", padx=14, pady=(0, 12))
         limit_note = f"Free version scans up to {FREE_MAX_HOSTS} devices per scan."
         if self.is_premium:
-            limit_note = "Premium: unlimited range scanning enabled."
+            limit_note = "Premium: up to 254 hosts on a private /24 network."
         self.limit_label = ctk.CTkLabel(row2, text=limit_note, text_color="#999999", font=ctk.CTkFont(size=11))
         self.limit_label.pack(side="left")
 
@@ -164,7 +163,6 @@ class SMBSentinelApp(ctk.CTk):
         frame.pack(fill="x", padx=16, pady=(0, 14))
 
         premium_features = [
-            ("🔒 CVE Match & Severity", self._premium_gate),
             ("🔒 Export PDF", self._export_pdf),
             ("🔒 Export CSV", self._export_csv),
             ("🔒 Scan History / Trends", self._show_history),
@@ -352,7 +350,7 @@ class SMBSentinelApp(ctk.CTk):
         ).pack(pady=4)
 
         ctk.CTkLabel(win, text="Premium License Key", font=ctk.CTkFont(weight="bold")).pack(pady=(20, 4))
-        key_entry = ctk.CTkEntry(win, width=300, placeholder_text="MRCYBER-XXXXXXXX-XXXXXXXX")
+        key_entry = ctk.CTkEntry(win, width=300, placeholder_text="MRCYBER.<payload>.<signature>")
         key_entry.pack(pady=4)
         if self.is_premium:
             key_entry.insert(0, license_manager.load_saved_key())
